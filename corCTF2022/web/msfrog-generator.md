@@ -1,7 +1,7 @@
 # msfrog-generator
-**web exploitation (web) - 109 points**
-https://2022.cor.team/challs
-Description:
+**web exploitation (web) - 109 points** \\
+https://2022.cor.team/challs \\
+Description: \\
 ```
 The vanilla msfrog is hard to beat, but this webapp allows you to make it even better!
 ```
