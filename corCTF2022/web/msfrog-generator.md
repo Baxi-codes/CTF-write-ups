@@ -121,7 +121,7 @@ I will now list the commands and outputs that led me to the flag.
 ```
 {"msfrog": "corctf{sh0uld_h4ve_r3nder3d_cl13nt_s1de_:msfrog:}\n"}
 ```
-## Looking at the server files
+## Looking at the server files <a name="server">
 Now that we have found the flag, why not take a look at the `server.py` file we found in `/app`
 ```py
 import os
