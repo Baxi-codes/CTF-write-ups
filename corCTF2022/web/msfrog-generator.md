@@ -1,7 +1,7 @@
 # msfrog-generator
-**web exploitation (web) - 109 points** \\
-https://2022.cor.team/challs \\
-Description: \\
+**web exploitation (web) - 109 points**   <br>
+https://2022.cor.team/challs   <br>
+Description:  <br>
 ```
 The vanilla msfrog is hard to beat, but this webapp allows you to make it even better!
 ```
@@ -15,9 +15,9 @@ The vanilla msfrog is hard to beat, but this webapp allows you to make it even b
 8. [TL;DR](#tldr)
 
 ## First look <a name="first-look">
-The challenge gave us a link to a webpage that looks like this\\
-![webpage](https://i.imgur.com/MIBxABW.png)\\
-It is a game where you can add upto 3 items to the canvas and move them around.\\
+The challenge gave us a link to a webpage that looks like this<br>
+![webpage](https://i.imgur.com/MIBxABW.png)<br>
+It is a game where you can add upto 3 items to the canvas and move them around.<br>
 Clicking the generate button will download an image of the canvas.
 
 ## Looking at the source <a name="source-look">
@@ -25,12 +25,12 @@ Opening the dev tools in chrome, first thing we see in the source is a note in t
 ```
  NOTE: There is no (intended) vuln in the frontend, please don't waste your time digging into the JS ;)
 ```
-![note-in-comments](https://i.imgur.com/Ifhe3ig.png)\\
-So, this means that the intended vulnerability is server-side.\\
-Looking at the `sources` tab, the file structure ressembles that of a typical React application.\\
-![sources-tab](https://i.imgur.com/R0V7nVm.png)\\
-Next 5 minutes I looked at the sources and found that on clicking the `generate` button, the page sends a post request to `/api/generate` with the data of the items placed on the canvas.\\
-![POST-request](https://i.imgur.com/1SzNwM0.png)\\
+![note-in-comments](https://i.imgur.com/Ifhe3ig.png)<br>
+So, this means that the intended vulnerability is server-side.<br>
+Looking at the `sources` tab, the file structure ressembles that of a typical React application.<br>
+![sources-tab](https://i.imgur.com/R0V7nVm.png)<br>
+Next 5 minutes I looked at the sources and found that on clicking the `generate` button, the page sends a post request to `/api/generate` with the data of the items placed on the canvas.<br>
+![POST-request](https://i.imgur.com/1SzNwM0.png)<br>
 The server responds with base64 data of the image to be downloaded.
 
 ## Messing around with the POST request <a name="post">
@@ -59,8 +59,8 @@ if (response.status !== 200)
 	console.log( `Unexpected response: ${response.status}`);
 response = await response.json();
 ```
-In response, the server sent a string\\
-![non-existing-img](https://i.imgur.com/JtPxdjE.png)\\
+In response, the server sent a string<br>
+![non-existing-img](https://i.imgur.com/JtPxdjE.png)<br>
 So I tried doing it with coordinates
 ```js
 {
@@ -71,7 +71,7 @@ So I tried doing it with coordinates
 	}
 }
 ```
-but it just sent another base64 image data response.\\
+but it just sent another base64 image data response.<br>
 So then I tried using && with coordinates
 ```js
 {
@@ -82,13 +82,13 @@ So then I tried using && with coordinates
 	}
 }
 ```
-This time it responded with the string \\
+This time it responded with the string <br>
 ```
 Something went wrong :
 b"convert-im6.q16: missing an image filename `+100+100' @ error/convert.c/ConvertImageCommand/3226.\n"
 ```
-Aha! So it uses imagemagick to combine the images.\\
-The `||` operator in shell executes the next command if the previous command fails.\\
+Aha! So it uses imagemagick to combine the images.<br>
+The `||` operator in shell executes the next command if the previous command fails.<br>
 So I replaced `&&` with `||` and also placed `||` at the end
 ```js
 "pos":{
@@ -223,7 +223,7 @@ let response = await fetch("/api/generate", {
 }).then(r=>r.json()).then(data=>console.log(data.msfrog));
 ```
 ## TL;DR <a name="tldr">
-The server uses imagemagick to combine the images and generates base64 data based on the contents of the POST request.\\
-We can achieve RCE by giving `|| <your command> ||` in place of a coordinate.\\
+The server uses imagemagick to combine the images and generates base64 data based on the contents of the POST request.<br>
+We can achieve RCE by giving `|| <your command> ||` in place of a coordinate.<br>
 
 The output flag is `corctf{sh0uld_h4ve_r3nder3d_cl13nt_s1de_:msfrog:}`
