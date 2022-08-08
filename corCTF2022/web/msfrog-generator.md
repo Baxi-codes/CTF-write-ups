@@ -214,7 +214,7 @@ jsonData=[
 		}
 	}
 ]
-let response = await fetch("/api/generate", {
+let response = await fetch("https://msfrog-generator.be.ax/api/generate", {
 	method: "POST",
 	headers: {
 		"Content-Type": "application/json",
